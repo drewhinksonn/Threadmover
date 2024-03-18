@@ -1,10 +1,8 @@
 const axios = require('axios');
 
 exports.handler = async (event) => {
-  const params = new URLSearchParams(event.body);
-  const trigger_id = params.get('trigger_id');
-  const channel_id = params.get('channel_id'); 
- console.log(event.body);
+  const { trigger_id } = JSON.parse(event.body);
+
   const modal = {
     "type": "modal",
     "callback_id": "move-thread-modal",
@@ -73,18 +71,26 @@ exports.handler = async (event) => {
     ]
   };
 
-  await axios.post('https://slack.com/api/views.open', {
-    trigger_id,
-    view: modal
-  }, {
-    headers: {
-      'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  try {
+    await axios.post('https://slack.com/api/views.open', {
+      trigger_id,
+      view: modal
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-  return {
-    statusCode: 200,
-    body: ''
-  };
+    return {
+      statusCode: 200,
+      body: ''
+    };
+  } catch (error) {
+    console.error('Error sending modal:', error);
+    return {
+      statusCode: 500,
+      body: 'Failed to send modal',
+    };
+  }
 };
