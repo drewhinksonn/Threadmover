@@ -36,7 +36,7 @@ exports.handler = async (event) => {
      
       const repliesResponse = await axios.get('https://slack.com/api/conversations.replies', {
         headers: {
-          Authorization: `Bearer ${SLACK_BOT_TOKEN}`, 
+          Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`, 
         },
         params: {
           channel: channelID,
