@@ -1,0 +1,19 @@
+{
+	"geolocation": {
+		"data": {
+			"city": "Wallaceburg",
+			"country": {
+				"code": "CA",
+				"name": "Canada"
+			},
+			"subdivision": {
+				"code": "ON",
+				"name": "Ontario"
+			},
+			"timezone": "America/Toronto",
+			"latitude": 42.5921,
+			"longitude": -82.387
+		},
+		"timestamp": 1710782426704
+	}
+}
