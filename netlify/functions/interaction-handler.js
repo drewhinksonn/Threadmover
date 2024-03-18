@@ -1,8 +1,26 @@
 const axios = require('axios');
 
 exports.handler = async (event) => {
+
+  if (!event.body) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'Bad request: No body content' }),
+    };
+  }
+
+  let payload;
   
-  const payload = JSON.parse(decodeURIComponent(event.body).replace('payload=', ''));
+
+  try {
+    payload = JSON.parse(decodeURIComponent(event.body).slice('payload='.length));
+  } catch (error) {
+    console.error('Error parsing JSON:', error);
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'Bad request: Error parsing JSON' }),
+    };
+  }
   
   
   if (payload.type === 'view_submission' && payload.view.callback_id === 'move-thread-modal') {
