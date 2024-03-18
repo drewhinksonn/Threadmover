@@ -54,7 +54,7 @@ exports.handler = async (event) => {
             text: message.text,
             thread_ts: index === 0 ? undefined : threadTsInNewChannel, 
             headers: {
-              Authorization: `Bearer ${SLACK_BOT_TOKEN}`, 
+              Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`, 
               'Content-Type': 'application/json',
             },
           });
@@ -74,7 +74,7 @@ exports.handler = async (event) => {
             ts: message.ts,
           }, {
             headers: {
-              Authorization: `Bearer ${SLACK_USER_TOKEN}`,
+              Authorization: `Bearer ${process.env.SLACK_USER_TOKEN}`,
               'Content-Type': 'application/json',
             },
           });
