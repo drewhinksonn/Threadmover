@@ -1,29 +1,24 @@
 const axios = require('axios');
 
 exports.handler = async (event) => {
-
   if (!event.body) {
-   
-    return {
-      statusCode: 200, 
-      body: JSON.stringify({ message: 'Function is up. Use POST with a valid payload for Slack interactions.' }),
-    };
+    return { statusCode: 400, body: 'No body content' };
   }
-
+  
   let payload;
 
   try {
-    payload = JSON.parse(decodeURIComponent(event.body).slice('payload='.length));
+    // Correctly handling URL-encoded bodies and parsing JSON
+    const body = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString() : event.body;
+    const decoded = decodeURIComponent(body).replace('payload=', '');
+    payload = JSON.parse(decoded);
   } catch (error) {
     console.error('Error parsing JSON:', error);
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Bad request: Error parsing JSON' }),
-    };
+    return { statusCode: 400, body: 'Error parsing input' };
   }
   
   
-  if (payload.type === 'view_submission' && payload.view.callback_id === 'move-thread-modal') {
+  if (payload.type === 'view_submission') {
     const values = payload.view.state.values;
     const threadLink = values.thread_link.input.value;
     const newChannelID = payload.view.state.values.target_channel.select.selected_channel;
