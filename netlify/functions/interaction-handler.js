@@ -3,14 +3,14 @@ const axios = require('axios');
 exports.handler = async (event) => {
 
   if (!event.body) {
+   
     return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Bad request: No body content' }),
+      statusCode: 200, 
+      body: JSON.stringify({ message: 'Function is up. Use POST with a valid payload for Slack interactions.' }),
     };
   }
 
   let payload;
-  
 
   try {
     payload = JSON.parse(decodeURIComponent(event.body).slice('payload='.length));
