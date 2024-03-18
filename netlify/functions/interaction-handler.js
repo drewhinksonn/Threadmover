@@ -1,86 +1,77 @@
 const axios = require('axios');
 
 exports.handler = async (event) => {
+  console.log('Received event:', event);
+
   if (!event.body) {
     return { statusCode: 400, body: 'No body content' };
   }
-  
-  let payload;
 
   try {
-    // Correctly handling URL-encoded bodies and parsing JSON
+    let payload;
     const body = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString() : event.body;
     const decoded = decodeURIComponent(body).replace('payload=', '');
     payload = JSON.parse(decoded);
-  } catch (error) {
-    console.error('Error parsing JSON:', error);
-    return { statusCode: 400, body: 'Error parsing input' };
-  }
-  
-  
-  if (payload.type === 'view_submission') {
-    const values = payload.view.state.values;
-    const threadLink = values.thread_link.input.value;
-    const newChannelID = payload.view.state.values.target_channel.select.selected_channel;
 
-    const confirmation = values.confirmation.checkbox.selected_options.length > 0;
+    if (payload.type === 'view_submission') {
+      console.log('Received view_submission event:', payload);
 
-    
-    if (!confirmation || confirmation.length === 0) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          response_action: "errors",
-          errors: {
-            "confirmation_block": "You must confirm the action." 
-          }
-        })
-      };
-    }
+      const values = payload.view.state.values;
+      const threadLink = values.thread_link.input.value;
+      const newChannelID = payload.view.state.values.target_channel.select.selected_channel;
+      const confirmation = values.confirmation.checkbox.selected_options.length > 0;
 
-    
-    const linkParts = threadLink.split('/');
-    const channelID = linkParts[linkParts.indexOf('archives') + 1];
-    let timestamp = linkParts[linkParts.indexOf('archives') + 2].substring(1); 
-    timestamp = timestamp.slice(0, -6) + "." + timestamp.slice(-6); 
-    console.log(timestamp, channelID);
+      if (!confirmation) {
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            response_action: "errors",
+            errors: {
+              "confirmation_block": "You must confirm the action."
+            }
+          })
+        };
+      }
 
-    try {
-     
+      const linkParts = threadLink.split('/');
+      const channelID = linkParts[linkParts.indexOf('archives') + 1];
+      let timestamp = linkParts[linkParts.indexOf('archives') + 2].substring(1);
+      timestamp = timestamp.slice(0, -6) + "." + timestamp.slice(-6);
+
+      console.log('Retrieving thread from channel:', channelID, 'at timestamp:', timestamp);
+
       const repliesResponse = await axios.get('https://slack.com/api/conversations.replies', {
         headers: {
-          Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`, 
+          Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
         },
         params: {
           channel: channelID,
           ts: timestamp
         },
       });
-  
 
       if (repliesResponse.data.ok && repliesResponse.data.messages && repliesResponse.data.messages.length > 0) {
-        let threadTsInNewChannel = null; 
-        
+        let threadTsInNewChannel = null;
+
         for (const [index, message] of repliesResponse.data.messages.entries()) {
           const postResponse = await axios.post('https://slack.com/api/chat.postMessage', {
             channel: newChannelID,
             text: message.text,
-            thread_ts: index === 0 ? undefined : threadTsInNewChannel, 
+            thread_ts: index === 0 ? undefined : threadTsInNewChannel,
+          }, {
             headers: {
-              Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`, 
+              Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
               'Content-Type': 'application/json',
             },
           });
-      
+
           if (postResponse.data.ok && index === 0) {
             threadTsInNewChannel = postResponse.data.ts;
           }
-      
-          
+
           await new Promise(resolve => setTimeout(resolve, 200));
         }
 
-      
         for (const message of repliesResponse.data.messages) {
           await axios.post('https://slack.com/api/chat.delete', {
             channel: channelID,
@@ -100,18 +91,18 @@ exports.handler = async (event) => {
         statusCode: 200,
         body: '',
       };
-    } catch (error) {
-      console.error('Error moving thread:', error);
+    } else {
+      console.log('Unhandled event type:', payload.type);
       return {
-        statusCode: 500,
-        body: 'Failed to move thread',
+        statusCode: 200,
+        body: 'Unhandled event type',
       };
     }
-  } else {
-   
+  } catch (error) {
+    console.error('Error processing event:', error);
     return {
-      statusCode: 200,
-      body: 'Unhandled event type',
+      statusCode: 500,
+      body: 'Failed to process event',
     };
   }
 };
