@@ -78,7 +78,7 @@ exports.handler = async (event) => {
     view: modal
   }, {
     headers: {
-      'Authorization': `Bearer ${SLACK_BOT_TOKEN}`,
+      'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
       'Content-Type': 'application/json'
     }
   });
