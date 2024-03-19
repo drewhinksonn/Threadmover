@@ -1,21 +1,38 @@
 const axios = require('axios');
 
-// SLACK_BOT_TOKEN is used for actions like posting messages and opening modals.
-// SLACK_USER_TOKEN is used for user-level actions like deleting messages.
+// Define your Slack tokens
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const SLACK_USER_TOKEN = process.env.SLACK_USER_TOKEN;
 
 exports.handler = async (event) => {
+  // Initialize payload outside of try-catch blocks
   let payload;
 
-  
-  try {
-    payload = JSON.parse(event.body);
-  } catch (error) {
-   
-    payload = JSON.parse(decodeURIComponent(event.body).replace('payload=', ''));
-  }
+  // Check if the event body is URL-encoded (slash commands) or JSON-encoded (interactive components)
+  if (event.headers['content-type'] === 'application/x-www-form-urlencoded') {
+    // URL-encoded payloads from slash commands
+    const params = new URLSearchParams(event.body);
+    const payloadParam = params.get('payload');
 
+    if (payloadParam) {
+      // Modal submissions are URL-encoded JSON strings under the 'payload' parameter
+      payload = JSON.parse(payloadParam);
+    } else {
+      // For slash commands, parse each parameter individually
+      payload = { command: params.get('command'), text: params.get('text'), trigger_id: params.get('trigger_id') };
+    }
+  } else if (event.headers['content-type'].startsWith('application/json')) {
+    // JSON-encoded payloads from interactive components
+    try {
+      payload = JSON.parse(event.body);
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+      return { statusCode: 400, body: 'Bad request' };
+    }
+  } else {
+    // Unsupported content type
+    return { statusCode: 400, body: 'Unsupported content type' };
+  }
 
   if (payload.command) {
 
