@@ -5,11 +5,12 @@ const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const SLACK_USER_TOKEN = process.env.SLACK_USER_TOKEN;
 
 exports.handler = async (event) => {
-  // Initialize payload outside of try-catch blocks
   let payload;
 
-  // Check if the event body is URL-encoded (slash commands) or JSON-encoded (interactive components)
-  if (event.headers['content-type'] === 'application/x-www-form-urlencoded') {
+  // Safely access the Content-Type, handling cases where it might be undefined
+  const contentType = event.headers['content-type'] || '';
+
+  if (contentType.includes('application/x-www-form-urlencoded')) {
     // URL-encoded payloads from slash commands
     const params = new URLSearchParams(event.body);
     const payloadParam = params.get('payload');
@@ -21,7 +22,7 @@ exports.handler = async (event) => {
       // For slash commands, parse each parameter individually
       payload = { command: params.get('command'), text: params.get('text'), trigger_id: params.get('trigger_id') };
     }
-  } else if (event.headers['content-type'].startsWith('application/json')) {
+  } else if (contentType.includes('application/json')) {
     // JSON-encoded payloads from interactive components
     try {
       payload = JSON.parse(event.body);
